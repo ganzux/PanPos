@@ -1,6 +1,7 @@
 package com.ganzux.urjc.ssdd.postealo;
 
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -12,7 +13,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestTemplate;
 
+import com.ganzux.urjc.ssdd.postealo.dto.Text;
 import com.ganzux.urjc.ssdd.postealo.model.Note;
 
 /**
@@ -54,6 +58,56 @@ public class NoteController {
 	public ResponseEntity<Boolean> addNote(@RequestBody Note note) {
 		log.info("IN addNote - " + note);
 		
+		HttpStatus status = HttpStatus.CREATED;
+		Boolean returned = true;
+
+		// We look if the text has a virus, via Pandemonium REST Service
+		try{
+			String uri = "http://localhost:80/message";
+			RestTemplate restTemplate = new RestTemplate();
+			
+			String callId = System.currentTimeMillis() + "_node1";
+			
+			Text text = new Text(callId, note.getAuthor(), note.getText());
+			Object response = 
+					restTemplate.postForObject(uri, text, Object.class);
+			Map<String, Object> responseJSonMap = (Map<String, Object>) response;
+
+			String call = (String) responseJSonMap.get("call");
+			String company = (String) responseJSonMap.get("company");
+			Boolean viruses = (Boolean) responseJSonMap.get("viruses");
+			Integer analysis_time = (Integer) responseJSonMap.get("analysis_time");
+
+			log.info("addNote - " + call + " : " + company + " : " + viruses + " : " + analysis_time);
+
+			// Not necessary, only for concurrent threads
+			if (callId.equals(call)){
+				if (viruses != null && !viruses){
+					log.debug("addNote - No virus found, tryin to save...");
+					noteRepository.save(note);
+					log.debug("addNote - save complete");
+				} else {
+					status = HttpStatus.BAD_REQUEST;
+					returned = false;
+					log.info("addNote - Virus found for " + note.getAuthor() +
+							" in text " + note.getText());
+				}
+			} else {
+				status = HttpStatus.BAD_REQUEST;
+				returned = false;
+				log.info("addNote - other thread");
+			}
+
+		} catch (ResourceAccessException e){
+			log.error("addNote - " + e.getMessage());
+			status = HttpStatus.SERVICE_UNAVAILABLE;
+			returned = false;
+		} catch (Exception e){
+			log.error("addNote - " + e.getMessage());
+			status = HttpStatus.BAD_REQUEST;
+			returned = false;
+		}
+		
 		/*Collection<String> tagsStr = new ArrayList<String>();
 		if (note.getTags() != null){
 			for (Tag tag : note.getTags()){
@@ -72,9 +126,8 @@ public class NoteController {
 			}
 		}*/
 
-		noteRepository.save(note);
-		log.info("OUT addNote - " + note);
-		return new ResponseEntity<Boolean>(true, HttpStatus.CREATED);
+		log.info("OUT addNote - " + note + " : " + returned + " : " + status);
+		return new ResponseEntity<Boolean>(returned, status);
 	}
 
 	/**
@@ -85,9 +138,30 @@ public class NoteController {
 	@RequestMapping(value = PATH_NOTES + "/{idNote}", method = RequestMethod.DELETE)
 	public ResponseEntity<Boolean> deleteNote(@PathVariable("idNote") Long idNote) {
 		log.info("IN deleteNote - " + idNote);
-		noteRepository.delete(idNote);
-		log.info("OUT deleteNote - " + idNote);
-		return new ResponseEntity<Boolean>(true, HttpStatus.ACCEPTED);
+
+		HttpStatus status = HttpStatus.OK;
+		Boolean returned = true;
+
+		try{
+			boolean thereIsNote = noteRepository.exists(idNote);
+			
+			if (thereIsNote){
+				log.debug("deleteNote - Note found, tryin to remove...");
+				noteRepository.delete(idNote);
+				log.debug("deleteNote - remove complete");
+			} else {
+				status = HttpStatus.NOT_FOUND;
+				returned = false;
+			}
+		} catch (Exception e){
+			log.error("deleteNote - " + e.getMessage());
+			status = HttpStatus.SERVICE_UNAVAILABLE;
+			returned = false;
+		}
+
+		log.info("OUT deleteNote - " +idNote + " : " + returned + " : " + status);
+
+		return new ResponseEntity<Boolean>(returned, status);
 	}
 
 	/**
@@ -97,9 +171,21 @@ public class NoteController {
 	@RequestMapping(value = PATH_NOTES, method = RequestMethod.DELETE)
 	public ResponseEntity<Boolean> deleteAll() {
 		log.info("IN deleteAll");
-		noteRepository.deleteAll();
-		log.info("OUT deleteAll");
-		return new ResponseEntity<Boolean>(true, HttpStatus.ACCEPTED);
+		
+		HttpStatus status = HttpStatus.OK;
+		Boolean returned = true;
+
+		try{
+			noteRepository.deleteAll();
+		} catch (Exception e){
+			log.error("deleteAll - " + e.getMessage());
+			status = HttpStatus.SERVICE_UNAVAILABLE;
+			returned = false;
+		}
+
+		log.info("OUT deleteAll - " + returned + " : " + status);
+
+		return new ResponseEntity<Boolean>(returned, status);
 	}
 
 	/**
@@ -107,11 +193,21 @@ public class NoteController {
 	 * @return The Notes List
 	 */
 	@RequestMapping(value = PATH_NOTES, method = RequestMethod.GET)
-	public List<Note> getNotes() {
+	public ResponseEntity<List<Note>> getNotes() {
 		log.info("IN getNotes");
-		List<Note> notes = noteRepository.findAll();
+
+		List<Note> notes = null;
+		HttpStatus status = HttpStatus.OK;
+
+		try{
+			notes = noteRepository.findAll();
+		} catch (Exception e){
+			status = HttpStatus.SERVICE_UNAVAILABLE;
+			log.error("getNotes - " + e.getMessage());
+		}
+
 		log.info("OUT getNotes");
-		return notes;
+		return new ResponseEntity<List<Note>>(notes, status);
 	}
 
 	/**
@@ -120,11 +216,21 @@ public class NoteController {
 	 * @return The Notes List that match with the parameter
 	 */
 	@RequestMapping(value = PATH_NOTES + "/{author}", method = RequestMethod.GET)
-	public List<Note> getNote(@PathVariable("author") String author) {
+	public ResponseEntity<List<Note>> getNote(@PathVariable("author") String author) {
 		log.info("IN getNote - " + author);
-		List<Note> notes =  noteRepository.findByAuthor(author);
+
+		List<Note> notes = null;
+		HttpStatus status = HttpStatus.OK;
+
+		try{
+			notes = noteRepository.findByAuthor(author);
+		} catch (Exception e){
+			status = HttpStatus.SERVICE_UNAVAILABLE;
+			log.error("getNote - " + author + " : " + e.getMessage());
+		}
+
 		log.info("OUT getNote - " + author);
-		return notes;
+		return new ResponseEntity<List<Note>>(notes, status);
 	}
 	///////////////////////////////////////////////////////////////
 	//                      /Public Methods                      //

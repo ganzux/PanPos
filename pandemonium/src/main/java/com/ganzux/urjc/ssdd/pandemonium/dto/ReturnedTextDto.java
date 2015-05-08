@@ -56,6 +56,12 @@ public class ReturnedTextDto {
 		this.analysis_time = analysis_time;
 	}
 	public ReturnedTextDto() {}
+	@Override
+	public String toString() {
+		return "ReturnedTextDto [call=" + call + ", company=" + company
+				+ ", viruses=" + viruses + ", analysis_time=" + analysis_time
+				+ "]";
+	}
 	///////////////////////////////////////////////////////////////
 	//              /Getter, Setter and Constructors             //
 	///////////////////////////////////////////////////////////////

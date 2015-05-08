@@ -24,7 +24,11 @@ public class Postealo {
     public static void main(String[] args) {
         SpringApplication.run(Postealo.class, args);
     }
-    
+
+    /**
+     * Method to override basic error pages
+     * @return containerCustomizer
+     */
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() {
      

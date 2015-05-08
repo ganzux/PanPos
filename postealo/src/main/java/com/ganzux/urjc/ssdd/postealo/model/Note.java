@@ -83,7 +83,13 @@ public class Note {
 		Tag tagObject = new Tag(tagText);
 		tags.add(tagObject);
 	}
+	@Override
+	public String toString() {
+		return "Note [id=" + id + ", author=" + author + ", text=" + text
+				+ ", tags=" + tags + "]";
+	}
 	///////////////////////////////////////////////////////////////
 	//              /Getter, Setter and Constructors             //
 	///////////////////////////////////////////////////////////////
+	
 }

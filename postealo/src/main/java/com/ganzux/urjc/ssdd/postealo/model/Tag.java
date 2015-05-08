@@ -52,6 +52,10 @@ public class Tag {
 	public void setText(String text) {
 		this.text = text;
 	}
+	@Override
+	public String toString() {
+		return "Tag [id=" + id + ", text=" + text + "]";
+	}
 	///////////////////////////////////////////////////////////////
 	//              /Getter, Setter and Constructors             //
 	///////////////////////////////////////////////////////////////

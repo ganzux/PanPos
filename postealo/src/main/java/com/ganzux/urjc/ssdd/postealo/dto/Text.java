@@ -1,22 +1,15 @@
-package com.ganzux.urjc.ssdd.pandemonium.model;
+package com.ganzux.urjc.ssdd.postealo.dto;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
 
 /**
  * Class that represents a Text Entity
  * @author ganzux
  */
-@Entity
 public class Text {
 
 	///////////////////////////////////////////////////////////////
 	//                        Attributes                         //
 	///////////////////////////////////////////////////////////////
-	@Id
-	@GeneratedValue(strategy=GenerationType.AUTO)
 	private long id;
 	
 	private String callId;
