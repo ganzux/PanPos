@@ -20,7 +20,7 @@ import com.ganzux.urjc.ssdd.postealo.model.Note;
 @SpringBootApplication
 public class PostealoTest {
 
-	private static final String urlPath = "http://localhost:8080";
+	private static final String urlPath = "http://postealourjc.cloudapp.net";
 	private static final String urlNotes = urlPath + NoteController.PATH_NOTES;
 	private static final String urlTags = urlPath + TagController.PATH_TAGS;
 	
