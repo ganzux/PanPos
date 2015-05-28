@@ -6,6 +6,7 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,6 +38,9 @@ public class NoteController {
 	@Autowired
 	private NoteRepository noteRepository;
 
+	@Value("${pande.url}")
+	private String pandeUrl;
+
 	/*@Autowired
 	private TagRepository tagRepository;*/
 	///////////////////////////////////////////////////////////////
@@ -63,7 +67,7 @@ public class NoteController {
 
 		// We look if the text has a virus, via Pandemonium REST Service
 		try{
-			String uri = "http://localhost:80/message";
+			String uri = "http://" + getPandeUrl() + "/message";
 			RestTemplate restTemplate = new RestTemplate();
 			
 			String callId = System.currentTimeMillis() + "_node1";
@@ -242,7 +246,12 @@ public class NoteController {
 	///////////////////////////////////////////////////////////////
 	//                      Private Methods                      //
 	///////////////////////////////////////////////////////////////
-
+	private String getPandeUrl(){
+		if (pandeUrl == null){
+			pandeUrl = "pandemoniumurjc.cloudapp.net:80";
+		}
+		return pandeUrl;
+	}
 	///////////////////////////////////////////////////////////////
 	//                      /Private Methods                     //
 	///////////////////////////////////////////////////////////////
